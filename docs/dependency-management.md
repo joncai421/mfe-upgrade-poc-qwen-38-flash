@@ -109,6 +109,30 @@ are recorded per PRD §3.1 / §11:
 5. **`overrides.graceful-fs: ^4.2.11`** (root `package.json`) — avoids the
    `graceful-fs` polyfill crash that older transitive copies cause on Node 20+/24.
 
+## Dependency divergence on the Option B branch (Part 2)
+
+Only `mfe-app-1` carries upgraded packages; the container, App 2 and App 3 keep the
+baseline versions exactly as listed above. npm workspaces install the React 19 line
+nested under `mfe-app-1/node_modules`, while the hoisted `react@16.14.0` at the
+repository root keeps serving the other three builds — a single version per
+generation, never one version per page.
+
+| Package | React 16 apps (unchanged) | mfe-app-1 (Option B) | Reason for the difference |
+|---|---|---|---|
+| `react`, `react-dom` | 16.14.0 | **19.3.1** | migration target; PRD's 19.3.0 was superseded by stable 19.3.1 |
+| `redux` | 4.0.5 | **5.0.1** | `react-redux@9` requires `redux ^5` |
+| `react-redux` | 7.2.2 | **9.3.1** | 7.x peer range excludes React 19 |
+| `react-router-dom` | 5.2.0 | **5.3.4** | 5.3.x drops `mini-create-react-context`, a React-16-era `createContext` polyfill; v5 API unchanged so no route code changed |
+| `jest`, `babel-jest`, `jest-environment-jsdom` | 26.6.3 | **30.5.2** | React 19 + RTL 16 need the modern jsdom/runner; only App 1's project uses them |
+| `@testing-library/react` | 11.2.5 | **16.3.3** | RTL 16 is the React 18/19 line |
+| `@testing-library/dom` | transitive (7.x) | **10.4.2** | peer of RTL 16 |
+| `@testing-library/user-event` | 12.6.0 | **14.6.8** | v14 API is async; App 1's tests were updated accordingly |
+| `@testing-library/jest-dom` | 5.11.9 | **6.9.1** | v6 dropped the `/extend-expect` entry point App 1's setup used |
+
+Peer ranges were verified against the installed React before upgrading each package
+(`npm view <pkg> peerDependencies`), and the resulting tree was checked with
+`npm ls react react-dom redux react-redux` plus a clean `npm ci` install.
+
 ## Tailwind purge note
 
 Tailwind v2 only enables `purge` when `process.env.NODE_ENV === "production"`, but

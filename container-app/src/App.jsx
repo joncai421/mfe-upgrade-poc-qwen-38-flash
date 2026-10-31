@@ -16,7 +16,7 @@ export default function App() {
       <div className="min-h-screen flex flex-col">
         <header className="bg-gray-800 text-white" data-testid="app-shell">
           <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-            <h1 className="text-lg font-semibold">MFE Container — React 16 Baseline</h1>
+            <h1 className="text-lg font-semibold">MFE Container — React 16 + React 19 (share scopes)</h1>
             <span
               className="text-xs bg-gray-700 rounded px-2 py-1"
               data-testid="container-react-version"
@@ -42,8 +42,9 @@ export default function App() {
           </Switch>
         </main>
         <footer className="text-center text-xs text-gray-500 py-3">
-          Module Federation baseline — container mounts remotes through the mount/unmount
-          contract, never through shared React trees.
+          Option B — the container stays on React 16 and mounts remotes through the
+          mount/unmount contract, never through shared React trees; App 1 renders with
+          React 19 from the separate “react19” share scope.
         </footer>
       </div>
     </Router>

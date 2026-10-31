@@ -15,7 +15,9 @@ function renderRoot(props) {
   );
 }
 
-const contract = createMountContract(React, ReactDOM, renderRoot);
+const contract = createMountContract(React, ReactDOM, renderRoot, {
+  shareScope: "react16",
+});
 
 export const mount = contract.mount;
 export const unmount = contract.unmount;

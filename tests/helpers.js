@@ -43,4 +43,22 @@ async function openRemote(page, app, id) {
   await page.waitForSelector(`[data-testid="status-${id}"] >> text=mounted`, { timeout: 15000 });
 }
 
-module.exports = { watchErrors, openRemote };
+/**
+ * Read what an application REPORTS about the React runtime it is actually
+ * executing with. Backed by the diagnostics table / mount-status badge, whose
+ * values come from getRuntimeInfo() inside each application — so these are
+ * runtime facts, not package.json metadata (PRD 5.5, 11 "testing quality").
+ */
+async function readRuntimeRow(page, id) {
+  const row = page.getByTestId(`runtime-${id}`).first();
+  await row.waitFor({ timeout: 20000 });
+  return {
+    react: await row.getAttribute("data-react-version"),
+    reactDom: await row.getAttribute("data-react-dom-version"),
+    shareScope: await row.getAttribute("data-share-scope"),
+    renderer: await row.getAttribute("data-renderer"),
+    sharesWithContainer: await row.getAttribute("data-shares-container-runtime"),
+  };
+}
+
+module.exports = { watchErrors, openRemote, readRuntimeRow };

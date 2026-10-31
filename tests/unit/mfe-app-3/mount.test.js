@@ -7,7 +7,15 @@ describe("mfe-app-3 mount/unmount contract", () => {
 
     const h1 = mount(el, { origin: "test" });
     expect(el.querySelector('[data-testid="app3-root"]')).toBeInTheDocument();
-    expect(h1.getRuntimeInfo()).toEqual({ reactVersion: "16.14.0", reactDomVersion: "16.14.0" });
+    // Option B: App 3 stays on the React 16 legacy renderer inside the "react16"
+    // share scope. runtimeTag is null here because no container tagged this copy.
+    expect(h1.getRuntimeInfo()).toEqual({
+      reactVersion: "16.14.0",
+      reactDomVersion: "16.14.0",
+      renderer: "react-dom:render",
+      shareScope: "react16",
+      runtimeTag: null,
+    });
     h1.unmount();
     expect(el.innerHTML).toBe("");
 

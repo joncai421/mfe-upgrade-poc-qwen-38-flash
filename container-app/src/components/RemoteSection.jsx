@@ -1,4 +1,5 @@
 import React from "react";
+import { sharesContainerRuntime } from "../utils/runtimeProbe";
 
 /**
  * Mounts a remote micro-frontend through the framework-independent
@@ -76,6 +77,7 @@ export default class RemoteSection extends React.Component {
   render() {
     const { remote } = this.props;
     const { status, error, runtimeInfo } = this.state;
+    const sharesRuntime = sharesContainerRuntime(runtimeInfo);
     return (
       <section data-testid={remote.testId} data-remote-id={remote.id}>
         <div className="flex items-center justify-between mb-3">
@@ -99,8 +101,13 @@ export default class RemoteSection extends React.Component {
             data-testid={`runtime-${remote.id}`}
             data-react-version={runtimeInfo.reactVersion}
             data-react-dom-version={runtimeInfo.reactDomVersion}
+            data-renderer={runtimeInfo.renderer}
+            data-share-scope={runtimeInfo.shareScope}
+            data-shares-container-runtime={sharesRuntime}
           >
             remote runtime: react@{runtimeInfo.reactVersion} react-dom@{runtimeInfo.reactDomVersion}
+            {runtimeInfo.shareScope ? ` scope@${runtimeInfo.shareScope}` : ""}
+            {sharesRuntime === "yes" ? " (shared with container)" : " (own instance)"}
           </div>
         ) : null}
         {status === "error" ? (

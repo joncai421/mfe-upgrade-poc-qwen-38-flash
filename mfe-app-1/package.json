@@ -6,13 +6,24 @@
     "start": "webpack serve --mode development",
     "build": "webpack --mode production",
     "build:stats": "webpack --mode production --json > .stats-build-stats.json",
-    "preview": "serve dist -l 3001 -s"
+    "preview": "serve dist -l 3001 -s",
+    "test:unit": "jest --config ../tests/unit/mfe-app-1/jest.config.js",
+    "test:unit:coverage": "jest --config ../tests/unit/mfe-app-1/jest.config.js --coverage"
   },
   "dependencies": {
-    "react": "16.14.0",
-    "react-dom": "16.14.0",
-    "react-redux": "7.2.2",
-    "react-router-dom": "5.2.0",
-    "redux": "4.0.5"
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "react-redux": "9.3.1",
+    "react-router-dom": "5.3.4",
+    "redux": "5.0.1"
+  },
+  "devDependencies": {
+    "@testing-library/dom": "10.4.2",
+    "@testing-library/jest-dom": "6.9.1",
+    "@testing-library/react": "16.3.3",
+    "@testing-library/user-event": "14.6.8",
+    "babel-jest": "30.5.2",
+    "jest": "30.5.2",
+    "jest-environment-jsdom": "30.5.2"
   }
 }

@@ -12,29 +12,66 @@ const dotenv = require("dotenv");
 // Remote URLs are centralised in .env (see .env.example) — never hardcoded in app code.
 dotenv.config({ path: path.resolve(__dirname, "..", ".env") });
 
-const SHARED_REACT_BASELINE = {
-  react: {
-    singleton: true,
-    requiredVersion: "^16.14.0",
-  },
-  "react-dom": {
-    singleton: true,
-    requiredVersion: "^16.14.0",
-  },
-  // Subpath sharing (trailing-slash syntax). React 16 + classic JSX runtime does not
-  // import react/jsx-runtime today; these entries keep the contract correct for the
-  // React 19 migration phases without changing the baseline sharing behaviour.
-  "react/": {
-    singleton: true,
-    requiredVersion: "^16.14.0",
-  },
-  "react-dom/": {
-    singleton: true,
-    requiredVersion: "^16.14.0",
-  },
+/**
+ * Option B — two independent Module Federation share scopes.
+ *
+ * `react16` carries the React 16 singleton consumed by the container, App 2 and
+ * App 3; `react19` carries the React 19 singleton consumed by App 1. Both live
+ * on the same browser page without ever resolving each other's React, because a
+ * consumer only looks inside its own `shareScope`.
+ *
+ * `singleton: true` is retained WITHIN each scope (PRD 5.3), and
+ * `strictVersion: true` makes a cross-generation lookup fail loudly instead of
+ * silently rendering with an incompatible runtime.
+ *
+ * `version` is pinned explicitly rather than inferred from the build context so
+ * each build registers the version it really provides into its own scope.
+ */
+const REACT16 = {
+  label: "react16",
+  shareScope: "react16",
+  version: "16.14.0",
+  requiredVersion: "^16.14.0",
 };
 
-function createConfig({ dir, name, port, filename, remotes, exposes }) {
+const REACT19 = {
+  label: "react19",
+  shareScope: "react19",
+  version: "19.3.1",
+  requiredVersion: "^19.3.1",
+};
+
+/**
+ * Builds the `shared` map for one React generation.
+ *
+ * Package-root sharing (`react`, `react-dom`) plus trailing-slash subpath
+ * sharing (`react/`, `react-dom/`) so `react/jsx-runtime` (automatic JSX
+ * runtime, React 19 app) and `react-dom/client` (createRoot) resolve through the
+ * same scope as their parent package (PRD 5.3).
+ *
+ * NOTE: the per-dependency `shareScope` below is NOT the whole story. A remote
+ * also has to declare the top-level `shareScope` option (see createConfig) — the
+ * scope name its container entry binds the host's map to. Without it a remote
+ * registers its providers into "default" while its consumers look inside
+ * "react16"/"react19", and every app silently falls back to its own React copy.
+ */
+function createReactShared({ shareScope, version, requiredVersion }) {
+  const options = {
+    singleton: true,
+    requiredVersion,
+    strictVersion: true,
+    shareScope,
+    version,
+  };
+  return {
+    react: { ...options },
+    "react-dom": { ...options },
+    "react/": { ...options },
+    "react-dom/": { ...options },
+  };
+}
+
+function createConfig({ dir, name, port, filename, remotes, exposes, react = REACT16 }) {
   const isProd = process.env.NODE_ENV !== "development" && process.env.NODE_ENV !== "test";
   const mode = isProd ? "production" : "development";
 
@@ -96,10 +133,14 @@ function createConfig({ dir, name, port, filename, remotes, exposes }) {
       }),
       new ModuleFederationPlugin({
         name,
+        // Scope this build shares with the host. It must equal the shareScope used
+        // by every shared dependency of the application (react.shareScope),
+        // otherwise the host's scope map lands under "default" and is never read.
+        ...(exposes ? { shareScope: react.shareScope } : {}),
         ...(filename ? { filename } : {}),
         ...(remotes ? { remotes } : {}),
         ...(exposes ? { exposes } : {}),
-        shared: SHARED_REACT_BASELINE,
+        shared: createReactShared(react),
       }),
       new HtmlWebpackPlugin({
         template: path.resolve(dir, "public", "index.html"),
@@ -121,4 +162,4 @@ function createConfig({ dir, name, port, filename, remotes, exposes }) {
   };
 }
 
-module.exports = { createConfig, SHARED_REACT_BASELINE };
+module.exports = { createConfig, createReactShared, REACT16, REACT19 };

@@ -8,6 +8,10 @@ module.exports = {
   testEnvironment: "jsdom",
   roots: ["<rootDir>/tests/unit"],
   testMatch: ["<rootDir>/tests/unit/**/*.test.js"],
+  // Option B: mfe-app-1 runs React 19 with its own Jest/RTL stack, so its tests
+  // are collected by tests/unit/mfe-app-1/jest.config.js instead of this project
+  // (which resolves the hoisted React 16.14.0 used by the other applications).
+  testPathIgnorePatterns: ["<rootDir>/tests/unit/mfe-app-1/"],
   setupFilesAfterEnv: ["<rootDir>/tests/jest.setup.js"],
   moduleNameMapper: {
     "\\.(css|less|scss)$": "<rootDir>/tests/__mocks__/styleMock.js",
@@ -19,7 +23,6 @@ module.exports = {
   transformIgnorePatterns: ["/node_modules/"],
   collectCoverageFrom: [
     "container-app/src/**/*.{js,jsx}",
-    "mfe-app-1/src/**/*.{js,jsx}",
     "mfe-app-2/src/**/*.{js,jsx}",
     "mfe-app-3/src/**/*.{js,jsx}",
     "!**/index.js",

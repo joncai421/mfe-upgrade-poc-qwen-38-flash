@@ -7,6 +7,9 @@ describe("mfe-app-2 mount/unmount contract", () => {
     const handle = mount(el, { origin: "test" });
     expect(el.querySelector('[data-testid="app2-root"]')).toBeInTheDocument();
     expect(handle.getRuntimeInfo().reactVersion).toBe("16.14.0");
+    // Option B: App 2 keeps the React 16 legacy renderer in the "react16" scope.
+    expect(handle.getRuntimeInfo().renderer).toBe("react-dom:render");
+    expect(handle.getRuntimeInfo().shareScope).toBe("react16");
     handle.unmount();
     expect(el.innerHTML).toBe("");
     el.remove();
