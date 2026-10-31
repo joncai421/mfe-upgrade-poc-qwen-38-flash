@@ -1,4 +1,3 @@
-import React from "react";
 import { Route, NavLink, Switch } from "react-router-dom";
 import HomePage from "./pages/HomePage";
 import DetailsPage from "./pages/DetailsPage";

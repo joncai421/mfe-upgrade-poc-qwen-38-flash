@@ -19,11 +19,14 @@ Both migration branches must branch from the **same** baseline commit. Option C 
 Recorded here once the developer commits and pushes `main` (Part 1 gate):
 
 ```
-BASELINE_COMMIT_SHA = <to be recorded by the developer after committing main>
+BASELINE_COMMIT_SHA = 163dd263517373c80fbabc92eec3e11ba86b0aa1   (main = origin/main, "init")
 ```
 
-Both `migration/*` branches must be created from this exact SHA. Until it is
-recorded, Part 2/3 cannot begin — this is a hard human gate (PRD 8.2).
+Both `migration/*` branches must be created from this exact SHA. Part 2
+(`migration/react19-share-scopes`) was created from it and verified with
+`git rev-parse main` before branching; Part 3 must branch from the same SHA and
+**not** from the Option B branch. Until a phase is committed by the developer, the
+next phase cannot begin — this is a hard human gate (PRD 8.2).
 
 ## Human verification gates (PRD 8.5)
 
@@ -61,6 +64,15 @@ React 19 code changes required in App 1 (PRD 5.4): replace `ReactDOM.render`/
 `shared/mount-contract.js` usage — App 1 will bind a React-19 variant while the
 other apps keep the React-16 variant), adopt the automatic JSX runtime, move `act`
 imports to `react`, and drop function-component `propTypes`/`defaultProps`.
+
+> **Part 2 outcome (this branch).** All of the above is implemented and verified;
+> the details, measurements and rollback procedure are in
+> [docs/migration-option-b.md](migration-option-b.md). One requirement was found
+> that the PRD does not mention: a remote must also set the **top-level**
+> `shareScope` option of `ModuleFederationPlugin`, not only
+> `shared[...].shareScope`, or the host's scope map is never read and every app
+> silently falls back to its own React copy (migration-option-b.md §2.1). Part 3
+> does not use named scopes, so it is unaffected by that specific pitfall.
 
 ## Starting Part 3 (Option C — multi-version default scope)
 

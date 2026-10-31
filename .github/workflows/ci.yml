@@ -2,9 +2,11 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    # The migration branches (Option B / Option C) must be independently testable,
+    # so CI runs for them too, not only for the baseline branch.
+    branches: [main, "migration/**"]
   pull_request:
-    branches: [main]
+    branches: [main, "migration/**"]
 
 jobs:
   build-test:
@@ -25,6 +27,8 @@ jobs:
         run: npm run lint
 
       - name: Unit tests
+        # Runs both unit projects: the React 16 stack (Jest 26) and, on the
+        # migration branches, the React 19 stack (Jest 30 + RTL 16) for mfe-app-1.
         run: npm run test:unit
 
       - name: Build all applications
