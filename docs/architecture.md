@@ -1,9 +1,16 @@
 # Architecture
 
+> Branch: `migration/react19-multi-version-default-scope` (Option C, Part 3). The Part 1
+> baseline on `main` shares a single React 16 runtime; on this branch **two React
+> generations coexist inside the one default share scope**.
+
 ## Overview
 
-The system is a host/container plus three independently built micro-frontends that
-share one React runtime through Webpack 5 Module Federation.
+The system is a host/container plus three independently built micro-frontends that share
+their React runtimes through Webpack 5 Module Federation. App 1 renders with React 19.3.1;
+the container, App 2 and App 3 still render with React 16.14.0. All four register and
+consume in the **same** `default` scope, and each application negotiates the version its
+`requiredVersion` allows.
 
 ```mermaid
 graph TD
@@ -11,10 +18,10 @@ graph TD
     subgraph Host["container-app :3000 (React 16)"]
         Shell[App shell + navigation]
         RS[RemoteSection<br/>imperative mount/unmount]
-        Diag[Diagnostics<br/>runtime version probe]
+        Diag[Diagnostics<br/>runtime version + instance identity probe]
     end
-    subgraph R1["mfe-app-1 :3001 (React 16)"]
-        E1["remoteEntry.js -> ./App (mount contract)"]
+    subgraph R1["mfe-app-1 :3001 (React 19)"]
+        E1["remoteEntry.js -> ./App (mount contract via createRoot)"]
     end
     subgraph R2["mfe-app-2 :3002 (React 16)"]
         E2["remoteEntry.js -> ./App"]
@@ -30,11 +37,11 @@ graph TD
     RS -->|import("mfeApp2/App")| E2
     RS -->|import("mfeApp3/App")| E3
 
-    SS[("Shared scope 'default'<br/>react + react-dom 16.14.0<br/>singleton: true")]
-    Host -.provides/consumes.-> SS
-    R1 -.consumes.-> SS
-    R2 -.consumes.-> SS
-    R3 -.consumes.-> SS
+    SS[("Shared scope 'default'<br/>react + react-dom@16.14.0 AND @19.3.1<br/>singleton: false, strictVersion: true")]
+    Host -."provides/consumes ^16.14.0".-> SS
+    R1 -."provides/consumes ^19.3.1".-> SS
+    R2 -."consumes ^16.14.0".-> SS
+    R3 -."consumes ^16.14.0".-> SS
 ```
 
 ## The mount/unmount contract (critical constraint)
@@ -44,10 +51,17 @@ framework-independent contract defined in
 [`shared/mount-contract.js`](../shared/mount-contract.js):
 
 ```js
-const handle = mount(element, props);   // creates a private React 16 root in `element`
-handle.unmount();                        // ReactDOM.unmountComponentAtNode(element)
-handle.getRuntimeInfo();                 // { reactVersion, reactDomVersion }
+const handle = mount(element, props);   // creates a private React root in `element`
+handle.unmount();                        // React 16: unmountComponentAtNode / React 19: root.unmount()
+handle.getRuntimeInfo();
+// { reactVersion, reactDomVersion, renderer, shareScope,
+//   identity: { react: {id, version, consumers}, reactDom: {...} } }
 ```
+
+Two factories implement it in [`shared/mount-contract.js`](../shared/mount-contract.js) —
+`createMountContract` (React 16, `ReactDOM.render`) and `createRootMountContract` (React 19,
+`createRoot`) — and return the **same handle shape**, which is why the container code does not
+care which generation a remote uses.
 
 This design enforces the PRD's architectural rules:
 
@@ -86,20 +100,29 @@ Each remote creates its **own Redux store inside `mount()`** (see each app's
 - **App 1** uses `MemoryRouter` for its own local Home/Details routes, so remote
   routing never interferes with the container's memory history.
 
-## Shared dependency strategy (baseline)
+## Shared dependency strategy (Option C)
 
-All four builds share `react` and `react-dom` from the **default** share scope with
-`singleton: true` and `requiredVersion: "^16.14.0"`:
+All four builds share `react` and `react-dom` from the **default** share scope, with
+`singleton: false` so two versions may be registered, `strictVersion: true` so a
+requirement that cannot be satisfied fails loudly, a generation-specific
+`requiredVersion`, and a pinned `version` so each build's offer is deterministic:
 
 ```js
+// React 16 builds (container, App 2, App 3) — React 19 build (App 1) uses ^19.3.1 / 19.3.1
 shared: {
-  react:     { singleton: true, requiredVersion: "^16.14.0" },
-  "react-dom": { singleton: true, requiredVersion: "^16.14.0" },
-  "react/":    { singleton: true, requiredVersion: "^16.14.0" },
-  "react-dom/":{ singleton: true, requiredVersion: "^16.14.0" },
+  react:     { singleton: false, requiredVersion: "^16.14.0", strictVersion: true, version: "16.14.0" },
+  "react-dom": { singleton: false, requiredVersion: "^16.14.0", strictVersion: true, version: "16.14.0" },
+  "react/":    { singleton: false, requiredVersion: "^16.14.0", strictVersion: true, version: "16.14.0" },
+  "react-dom/":{ singleton: false, requiredVersion: "^16.14.0", strictVersion: true, version: "16.14.0" },
 }
 ```
 
-The trailing-slash subpath entries (`react/`, `react-dom/`) are configured so the
-same sharing contract remains correct for the React 19 phase (`react/jsx-runtime`,
-`react-dom/client`). See [module-federation-guide.md](module-federation-guide.md).
+The trailing-slash subpath entries (`react/`, `react-dom/`) keep `react/jsx-runtime` and
+`react-dom/client` negotiating to the same generation as their package root, which is what
+makes App 1's React 19 renderer and JSX runtime resolve together.
+
+No `shareScope` names and no custom `shareKey` values are used — that is the difference from
+Option B. The **semver constraint, not the scope name, is the separator**; see
+[migration-option-c.md](migration-option-c.md) for how the resulting provider selection was
+verified at runtime, and [module-federation-guide.md](module-federation-guide.md) for the
+configuration detail.

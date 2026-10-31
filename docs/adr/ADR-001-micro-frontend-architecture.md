@@ -2,7 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-10-31
-- **Phase:** Part 1 (baseline, `main`)
+- **Phase:** Part 1 (baseline, `main`); re-verified by Part 3 (Option C)
 
 ## Context
 
@@ -41,6 +41,30 @@ tree, and without a React Bridge dependency.
   architecture, matching PRD constraints 2–4.
 - **Trade-off:** during the migration window more than one React runtime is loaded
   (measured in the performance docs); this is the cost being studied, not a defect.
+
+## Part 3 verification (Option C, React 19 in the default scope)
+
+The integration seam held. Mounting a React 19 remote required **no change to the container's
+orchestration code** (`RemoteSection` still calls `remote.load()` → `mod.mount(element, props)` →
+`handle.unmount()`), and **no React Bridge** was introduced. App 1's upgrade is confined to its own
+workspace plus one descriptor in the shared webpack factory.
+
+Two honest qualifications to the "no change to the contract" claim, both additive:
+
+1. `shared/mount-contract.js` gained a second **factory** (`createRootMountContract`) because React
+   19 removed `ReactDOM.render`. The **interface** — `mount(element, props)` returning
+   `{ unmount, isMounted, getRuntimeInfo }` — is unchanged, and the React 16 apps keep calling the
+   original factory with no code change.
+2. `getRuntimeInfo()` grew `renderer`, `shareScope` and `identity` fields, and the container's
+   Diagnostics page/bootstrap were extended to display and to register them. PRD 5.5/6.6 demands
+   verification of the *actual* runtime per application, and under `singleton: false` a version
+   string alone is not sufficient evidence — module-object identity is
+   ([migration-option-c.md §4](../migration-option-c.md#4-shared-dependency-resolution--verification)).
+   Existing consumers of the earlier two-field shape are unaffected: the additions are additive.
+
+The "more than one React runtime during migration" trade-off was measured rather than assumed:
+two React and two React DOM instances on the page, each downloaded exactly once
+([performance-option-c-runtime.md](../performance-option-c-runtime.md)).
 
 ## Alternatives considered
 

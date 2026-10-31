@@ -16,7 +16,7 @@ export default function App() {
       <div className="min-h-screen flex flex-col">
         <header className="bg-gray-800 text-white" data-testid="app-shell">
           <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-            <h1 className="text-lg font-semibold">MFE Container — React 16 Baseline</h1>
+            <h1 className="text-lg font-semibold">MFE Container — React 16 host (Option C: mixed versions in one scope)</h1>
             <span
               className="text-xs bg-gray-700 rounded px-2 py-1"
               data-testid="container-react-version"

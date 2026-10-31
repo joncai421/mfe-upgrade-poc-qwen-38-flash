@@ -99,8 +99,17 @@ export default class RemoteSection extends React.Component {
             data-testid={`runtime-${remote.id}`}
             data-react-version={runtimeInfo.reactVersion}
             data-react-dom-version={runtimeInfo.reactDomVersion}
+            data-share-scope={runtimeInfo.shareScope}
+            data-renderer={runtimeInfo.renderer}
+            data-react-instance={runtimeInfo.identity && runtimeInfo.identity.react.id}
+            data-react-instance-version={runtimeInfo.identity && runtimeInfo.identity.react.version}
+            data-react-instance-consumers={
+              runtimeInfo.identity && runtimeInfo.identity.react.consumers.join(",")
+            }
           >
             remote runtime: react@{runtimeInfo.reactVersion} react-dom@{runtimeInfo.reactDomVersion}
+            {runtimeInfo.renderer ? ` via ${runtimeInfo.renderer}` : ""}
+            {runtimeInfo.shareScope ? ` (scope: ${runtimeInfo.shareScope})` : ""}
           </div>
         ) : null}
         {status === "error" ? (
