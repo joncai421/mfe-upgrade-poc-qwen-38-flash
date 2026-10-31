@@ -1,0 +1,9 @@
+node_modules/
+dist/
+coverage/
+.env
+.stats-build-stats.json
+test-results/
+playwright-report/
+bundle-report.html
+.DS_Store

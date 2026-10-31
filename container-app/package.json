@@ -1,0 +1,17 @@
+{
+  "name": "container-app",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "webpack serve --mode development",
+    "build": "webpack --mode production",
+    "build:stats": "webpack --mode production --json > .stats-build-stats.json",
+    "preview": "serve dist -l 3000 -s"
+  },
+  "dependencies": {
+    "history": "4.10.1",
+    "react": "16.14.0",
+    "react-dom": "16.14.0",
+    "react-router-dom": "5.2.0"
+  }
+}
