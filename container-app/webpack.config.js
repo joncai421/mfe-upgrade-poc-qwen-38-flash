@@ -1,4 +1,4 @@
-const { createConfig } = require("../shared/webpack.base");
+const { createConfig, REACT_16_VERSION } = require("../shared/webpack.base");
 
 // Remote URLs come from .env (build-time injected); module aliases are stable.
 const remotes = {
@@ -12,4 +12,5 @@ module.exports = createConfig({
   name: "containerApp",
   port: 3000,
   remotes,
+  reactVersion: REACT_16_VERSION,
 });

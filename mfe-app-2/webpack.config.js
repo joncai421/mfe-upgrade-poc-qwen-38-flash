@@ -1,4 +1,4 @@
-const { createConfig } = require("../shared/webpack.base");
+const { createConfig, REACT_16_VERSION } = require("../shared/webpack.base");
 
 module.exports = createConfig({
   dir: __dirname,
@@ -6,4 +6,5 @@ module.exports = createConfig({
   port: 3002,
   filename: "remoteEntry.js",
   exposes: { "./App": "./src/mount.js" },
+  reactVersion: REACT_16_VERSION,
 });

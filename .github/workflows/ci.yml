@@ -2,7 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    # main is the Part 1 baseline; the migration branches are independently reviewable
+    # deliverables that must each pass the same pipeline (PRD 4.4 / 8.x).
+    branches: [main, "migration/**"]
   pull_request:
     branches: [main]
 

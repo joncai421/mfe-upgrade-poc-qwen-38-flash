@@ -2,12 +2,16 @@
 
 ## Ports
 
-| Application     | Dev server | Production preview |
-| --------------- | ---------- | ------------------ |
-| `container-app` | 3000       | 3000               |
-| `mfe-app-1`     | 3001       | 3001               |
-| `mfe-app-2`     | 3002       | 3002               |
-| `mfe-app-3`     | 3003       | 3003               |
+| Application     | React | Dev server | Production preview |
+| --------------- | ----- | ---------- | ------------------ |
+| `container-app` | 16.14.0 | 3000     | 3000               |
+| `mfe-app-1`     | **19.3.1** | 3001 | 3001               |
+| `mfe-app-2`     | 16.14.0 | 3002     | 3002               |
+| `mfe-app-3`     | 16.14.0 | 3003     | 3003               |
+
+All four participate in the **one `default` Module Federation scope** (Option C), so a
+remote may be opened standalone (`:3001`) or mounted by the container (`:3000`) without any
+change to how it is built.
 
 ## Install
 
@@ -25,6 +29,12 @@ npm start
 Starts all four webpack-dev-servers concurrently via `concurrently`. Open
 <http://localhost:3000>. The container fetches each remote's `remoteEntry.js` from
 the ports in `.env`.
+
+To see which React runtime each application actually resolved, open the
+**Diagnostics** tab: it probes all three remotes through the real federation runtime and
+reports, per application, the React/React DOM version, renderer, share scope, and the
+**identity** of the module instance it got — plus a page-wide census of how many React
+instances the page is running and which applications share each one.
 
 ## Run a single application
 
@@ -63,9 +73,14 @@ object. Module **aliases** (`mfeApp1`, `mfeApp2`, `mfeApp3`) stay stable so
 
 ```bash
 npm run build          # production build of all four apps (each -> <app>/dist)
-npm run build:stats    # production build + regenerate docs/performance-baseline.md
+npm run build:stats    # production build + regenerate this branch's performance document
 npm run preview        # serve each app's dist/ on its port (for manual QA of prod)
+npm run perf:measure   # drive the real page and record browser-side fetches/timings
 ```
+
+`build:stats` picks its output document from the sharing configuration it finds, so on this
+branch it writes `docs/performance-option-c.md` and leaves the Part 1
+`docs/performance-baseline.md` untouched.
 
 ## Lint and format
 
@@ -75,12 +90,26 @@ npm run lint:fix
 npm run format         # Prettier
 ```
 
+The React 19 workspace is covered by an ESLint `overrides` block that turns off the two
+classic-runtime JSX rules for `mfe-app-1` and its tests (with the React 19 automatic JSX
+runtime, `React` must *not* be in scope for JSX).
+
 ## Environment notes
 
 - Developed on **Node.js 24**, CI-tested on **Node.js 20** (both verified). npm
   workspaces requires npm 7+.
-- Babel uses the **classic JSX runtime** because React 16 predates the automatic
-  runtime; every JSX file must have `React` in scope (it does).
+- Babel: the root `babel.config.js` uses the **classic JSX runtime** (React 16 predates the
+  automatic runtime, so those apps keep `React` in scope). `mfe-app-1/babel.config.js`
+  overrides it with **`runtime: "automatic"`** for the React 19 workspace. babel-loader runs
+  with `rootMode: "upward"` from each app's own directory, so the app-level file becomes the
+  Babel root for that build only.
+- Two Jest stacks coexist: Jest 26 + RTL 11 at the root for the React 16 workspaces, and
+  Jest 30 + RTL 16 installed inside `mfe-app-1` (`npm run test:unit:app1`).
+- Dev-mode console output differs between the two React dev builds. The React 16 container
+  logs two pre-existing `NavLink` warnings inherited from `main`
+  ([documented here](./migration-option-c.md#64-pre-existing-container-defect-left-untouched));
+  App 1's equivalent warning was fixed as part of the React 19 migration. Production builds
+  (what the test suites and `npm run preview` serve) log nothing.
 - Tailwind `purge` is force-enabled in `tailwind.config.js` because webpack's
   `--mode production` does not set `process.env.NODE_ENV` for PostCSS plugins (see
   [dependency-management.md](dependency-management.md)).
